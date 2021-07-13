@@ -31,6 +31,7 @@ spec:
       - name: fetch-repository
         taskRef:
           name: git-clone
+          kind: ClusterTask
         workspaces:
           - name: output
             workspace: source
@@ -39,27 +40,30 @@ spec:
             value: $(params.repo_url)
           - name: revision
             value: $(params.revision)
-      - name: noop-task
+
+      - name: build-image
+        taskRef:
+          name: s2i-go
+          kind: ClusterTask
+        workspaces:
+          - name: output
+            workspace: source
+        params:
+          - name: TLSVERIFY
+            value: "false"
+          - name: IMAGE
+            value: image-registry.openshift-image-registry.svc:5000/pipelines-demos/sample-go
+          - name: PATH_CONTEXT
+            value: sample-go/source-build/
         runAfter:
           - fetch-repository
-        workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: noop-task
-              image: registry.access.redhat.com/ubi8/ubi-micro:8.4
-              workingDir: $(workspaces.source.path)
-              script: |
-                exit 0
+
   workspaces:
-  - name: source
-    volumeClaimTemplate:
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
